@@ -12,22 +12,23 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.Alignment
 
 class MenuActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            Column(modifier = Modifier.fillMaxSize().padding(16.dp)) {
+            Column(modifier = Modifier.fillMaxSize().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Button(onClick = {
                     startActivity(Intent(this@MenuActivity, RPGCardActivity::class.java))
                 }) {
-                    Text("RPGCardActivity")
+                    Text("RPG Status")
                 }
                 Button(onClick = {
                     startActivity(Intent(this@MenuActivity, PokedexActivity::class.java))
                 }) {
-                    Text("PokedexActivity")
+                    Text("Pokedex")
                 }
                 Button(onClick = {
                     startActivity(Intent(this@MenuActivity, MainWeasel::class.java))
