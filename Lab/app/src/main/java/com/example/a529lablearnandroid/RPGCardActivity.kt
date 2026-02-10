@@ -2,13 +2,12 @@ package com.example.a529lablearnandroid
 
 import android.content.Intent
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -30,13 +29,43 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 
-class MainActivity : ComponentActivity() {
+class RPGCardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        enableEdgeToEdge()
+        Log.i("Lifecyble", "MainActivity : onCreate")
         setContent {
             RPGCardView()
         }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        Log.i("Lifecycle", "MainActivity : onStart")
+    }
+
+    override fun onResume() {
+        super.onResume()
+        Log.i("Lifecycle", "MainActivity : onResume")
+    }
+
+    override fun onPause() {
+        super.onPause()
+        Log.i("Lifecycle", "MainActivity : onPause")
+    }
+
+    override fun onStop() {
+        super.onStop()
+        Log.i("Lifecycle", "MainActivity : onStop")
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        Log.i("Lifecycle", "MainActivity : onDestroy")
+    }
+
+    override fun onRestart() {
+        super.onRestart()
+        Log.i("Lifecycle", "MainActivity : onRestart")
     }
 
     @Composable
@@ -65,7 +94,7 @@ class MainActivity : ComponentActivity() {
                 Image(
                     painter = painterResource(id = R.drawable.wprofile),
                     contentDescription = "Profile",
-                    modifier = Modifier.size(156.dp).padding(top = 10.dp).clickable { startActivity(Intent(this@MainActivity,List2Activity::class.java)) }
+                    modifier = Modifier.size(156.dp).padding(top = 10.dp).clickable { startActivity(Intent(this@RPGCardActivity,MainWeasel::class.java)) }
                 )
                 Column {
                     Row(
