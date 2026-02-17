@@ -28,10 +28,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.a529lablearnandroid.utils.SharedPreferencesUtil
 
 class RPGCardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        SharedPreferencesUtil.init(this)
+        SharedPreferencesUtil.saveString("user_name", "Witchapat")
         Log.i("Lifecyble", "MainActivity : onCreate")
         setContent {
             RPGCardView()
@@ -70,13 +73,14 @@ class RPGCardActivity : ComponentActivity() {
 
     @Composable
         fun RPGCardView() {
+            val user_name = SharedPreferencesUtil.getString("user_name")
         Column(modifier = Modifier.fillMaxSize().background(Color.Gray).padding(32.dp)) {
             Box(
                 modifier = Modifier.fillMaxWidth().height(32.dp).background(Color.White)
             )
             {
                 Text(
-                    text = "Hit Points :",
+                    text = user_name,
                     modifier = Modifier.align(alignment = Alignment.CenterStart)
                         .fillMaxWidth(fraction = 0.529f).background(Color.Red).padding(8.dp)
                 )
