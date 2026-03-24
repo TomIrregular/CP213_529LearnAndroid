@@ -83,3 +83,6 @@ fun LifecycleComponent() {
 fun GreetingPreview2() {
     LifecycleDemo()
 }
+
+//checkin 24 Feb
+//checkin 10 March
