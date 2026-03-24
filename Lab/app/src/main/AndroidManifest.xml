@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.CAMERA" />
 
     <application
         android:allowBackup="true"
@@ -42,6 +43,24 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+        <activity
+            android:name=".CameraActivity"
+            android:exported="true"
+            android:label="Camera Flow"
+            android:theme="@style/Theme._529LabLearnAndroid">
+        </activity>
+        <activity
+            android:name=".GalleryActivity"
+            android:exported="true"
+            android:label="Gallery Viewer"
+            android:theme="@style/Theme._529LabLearnAndroid">
+        </activity>
+        <activity
+            android:name=".SensorActivity"
+            android:exported="true"
+            android:label="Sensor Activity"
+            android:theme="@style/Theme._529LabLearnAndroid">
         </activity>
         <activity
             android:name=".RPGCardActivity"

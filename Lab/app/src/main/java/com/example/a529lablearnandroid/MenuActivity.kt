@@ -21,6 +21,21 @@ class MenuActivity : ComponentActivity() {
         setContent {
             Column(modifier = Modifier.fillMaxSize().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Button(onClick = {
+                    startActivity(Intent(this@MenuActivity, CameraActivity::class.java))
+                }) {
+                    Text("Task 1: Camera")
+                }
+                Button(onClick = {
+                    startActivity(Intent(this@MenuActivity, GalleryActivity::class.java))
+                }) {
+                    Text("Task 2: Gallery Viewer")
+                }
+                Button(onClick = {
+                    startActivity(Intent(this@MenuActivity, SensorActivity::class.java))
+                }) {
+                    Text("Task 2&3: Sensor MVVM")
+                }
+                Button(onClick = {
                     startActivity(Intent(this@MenuActivity, RPGCardActivity::class.java))
                 }) {
                     Text("RPG Status")
