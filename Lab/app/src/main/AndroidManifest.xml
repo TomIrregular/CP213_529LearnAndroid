@@ -24,6 +24,66 @@
             android:theme="@style/Theme._529LabLearnAndroid">
         </activity>
         <activity
+            android:name=".Part2AnimationActivity"
+            android:exported="true"
+            android:label="Part 2 Animation"
+            android:theme="@style/Theme._529LabLearnAndroid">
+        </activity>
+        <activity
+            android:name=".Part3AnimationActivity"
+            android:exported="true"
+            android:label="Part 3 Animation"
+            android:theme="@style/Theme._529LabLearnAndroid">
+        </activity>
+        <activity
+            android:name=".Part4AnimationActivity"
+            android:exported="true"
+            android:label="Part 4 Animation"
+            android:theme="@style/Theme._529LabLearnAndroid">
+        </activity>
+        <activity
+            android:name=".Part5AnimationActivity"
+            android:exported="true"
+            android:label="Part 5 Animation"
+            android:theme="@style/Theme._529LabLearnAndroid">
+        </activity>
+        <activity
+            android:name=".Part6AnimationActivity"
+            android:exported="true"
+            android:label="Part 6 WebView"
+            android:theme="@style/Theme._529LabLearnAndroid">
+        </activity>
+        <activity
+            android:name=".Part8AnimationActivity"
+            android:exported="true"
+            android:label="Part 8 Responsive Design"
+            android:theme="@style/Theme._529LabLearnAndroid">
+        </activity>
+        <activity
+            android:name=".Part9Activity"
+            android:exported="true"
+            android:label="Part 9 Collapsing Top Bar"
+            android:theme="@style/Theme._529LabLearnAndroid">
+        </activity>
+        <activity
+            android:name=".Part10Activity"
+            android:exported="true"
+            android:label="Part 10 App Widget"
+            android:theme="@style/Theme._529LabLearnAndroid">
+        </activity>
+        <activity
+            android:name=".Part11Activity"
+            android:exported="true"
+            android:label="Part 11 Skeleton Loading"
+            android:theme="@style/Theme._529LabLearnAndroid">
+        </activity>
+        <activity
+            android:name=".Part12Activity"
+            android:exported="true"
+            android:label="Part 12 Bottom Sheet &amp; Dialog"
+            android:theme="@style/Theme._529LabLearnAndroid">
+        </activity>
+        <activity
             android:name=".MainWeasel"
             android:exported="true"
             android:label="@string/title_activity_main_weasel"
@@ -76,6 +136,18 @@
             android:label="@string/app_name"
             android:theme="@style/Theme._529LabLearnAndroid">
         </activity>
+
+        <receiver
+            android:name=".Part10WidgetReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/part10_widget_info" />
+        </receiver>
+
     </application>
 
 </manifest>

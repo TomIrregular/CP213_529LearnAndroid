@@ -66,6 +66,9 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation("io.coil-kt:coil-compose:2.6.0")
 
+    implementation("androidx.glance:glance-appwidget:1.1.0") // Check for latest version
+    implementation("androidx.glance:glance-material3:1.1.0")
+
     // Retrofit สำหรับคุยกับ Server
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     // Converter สำหรับแปลง JSON เป็น Data Class (Gson)
