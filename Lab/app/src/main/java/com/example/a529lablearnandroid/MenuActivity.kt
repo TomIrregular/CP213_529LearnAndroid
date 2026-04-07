@@ -21,6 +21,11 @@ class MenuActivity : ComponentActivity() {
         setContent {
             Column(modifier = Modifier.fillMaxSize().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
                 Button(onClick = {
+                    startActivity(Intent(this@MenuActivity, Part1AnimationActivity::class.java))
+                }) {
+                    Text("Part 1: Animation")
+                }
+                Button(onClick = {
                     startActivity(Intent(this@MenuActivity, CameraActivity::class.java))
                 }) {
                     Text("Task 1: Camera")

@@ -18,6 +18,12 @@
         android:theme="@style/Theme._529LabLearnAndroid"
         tools:targetApi="31">
         <activity
+            android:name=".Part1AnimationActivity"
+            android:exported="true"
+            android:label="Part 1 Animation"
+            android:theme="@style/Theme._529LabLearnAndroid">
+        </activity>
+        <activity
             android:name=".MainWeasel"
             android:exported="true"
             android:label="@string/title_activity_main_weasel"
