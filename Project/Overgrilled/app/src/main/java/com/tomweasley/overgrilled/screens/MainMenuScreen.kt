@@ -1,22 +1,23 @@
 package com.tomweasley.overgrilled.screens
 
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
+import com.tomweasley.overgrilled.R
 import com.tomweasley.overgrilled.ui.theme.*
 
 @Composable
@@ -37,90 +38,64 @@ fun MainMenuScreen(
         label = "glowAlpha"
     )
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(DarkBrown, MediumBrown, DarkBrown)
-                )
-            )
-    ) {
+    Box(modifier = Modifier.fillMaxSize()) {
+        // ── Animated GIF Background ──
+        AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(R.drawable.main_menu)
+                .crossfade(true)
+                .build(),
+            contentDescription = "Background",
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop
+        )
+
+        // ── Content ──
         Row(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(32.dp),
-            horizontalArrangement = Arrangement.Center,
+            horizontalArrangement = Arrangement.Start,
             verticalAlignment = Alignment.CenterVertically
         ) {
             // ── Left side: Title + High Score + Buttons ──
             Column(
-                modifier = Modifier.weight(1f),
-                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.wrapContentWidth(Alignment.Start).padding(start = 16.dp),
+                horizontalAlignment = Alignment.Start,
                 verticalArrangement = Arrangement.Center
             ) {
-                // Title placeholder box
-                Box(
+                // Title image
+                Image(
+                    painter = painterResource(id = R.drawable.title),
+                    contentDescription = "Overgrilled Title",
                     modifier = Modifier
-                        .fillMaxWidth(0.8f)
-                        .aspectRatio(2.5f)
+                        .fillMaxWidth(0.6f)
                         .shadow(
                             elevation = 16.dp,
                             shape = RoundedCornerShape(16.dp),
                             ambientColor = WarmOrange.copy(alpha = glowAlpha),
                             spotColor = WarmOrange.copy(alpha = glowAlpha)
-                        )
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(
-                            Brush.linearGradient(
-                                colors = listOf(
-                                    WarmOrange,
-                                    Color(0xFFFF8F00),
-                                    Gold
-                                )
-                            )
-                        )
-                        .border(
-                            width = 3.dp,
-                            color = Gold.copy(alpha = 0.6f),
-                            shape = RoundedCornerShape(16.dp)
                         ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "🥩 OVERGRILLED",
-                            fontSize = 28.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = DarkBrown,
-                            letterSpacing = 3.sp
-                        )
-                        Text(
-                            text = "Tom Weasley's",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium,
-                            color = DarkBrown.copy(alpha = 0.7f)
-                        )
-                    }
-                }
+                    contentScale = ContentScale.FillWidth
+                )
 
                 Spacer(modifier = Modifier.height(16.dp))
 
                 // High Score
                 Text(
-                    text = "🏆 HIGH SCORE: $$highScore",
+                    text = "\uD83C\uDFC6 HIGH SCORE: $$highScore",
                     style = MaterialTheme.typography.titleLarge,
-                    color = Gold,
+                    color = MoneyGreen,
                     fontWeight = FontWeight.Bold
                 )
 
-                Spacer(modifier = Modifier.height(32.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
                 // START button
                 Button(
                     onClick = onStartClick,
                     modifier = Modifier
-                        .fillMaxWidth(0.6f)
+                        .fillMaxWidth(0.4f)
                         .height(56.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = WarmOrange,
@@ -141,68 +116,9 @@ fun MainMenuScreen(
                 }
 
                 Spacer(modifier = Modifier.height(16.dp))
-
-                // OPTION button (does nothing)
-                OutlinedButton(
-                    onClick = onOptionClick,
-                    modifier = Modifier
-                        .fillMaxWidth(0.6f)
-                        .height(48.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = CreamWhite.copy(alpha = 0.6f)
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    border = androidx.compose.foundation.BorderStroke(
-                        1.dp, CreamWhite.copy(alpha = 0.3f)
-                    )
-                ) {
-                    Text(
-                        text = "⚙  OPTION",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.sp
-                    )
-                }
             }
 
             Spacer(modifier = Modifier.width(24.dp))
-
-            // ── Right side: Decorative image placeholder ──
-            Box(
-                modifier = Modifier
-                    .weight(0.7f)
-                    .aspectRatio(0.85f)
-                    .clip(RoundedCornerShape(20.dp))
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                LightBrown,
-                                MediumBrown
-                            )
-                        )
-                    )
-                    .border(
-                        width = 2.dp,
-                        color = WarmOrange.copy(alpha = 0.3f),
-                        shape = RoundedCornerShape(20.dp)
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "🔥",
-                        fontSize = 48.sp
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "IMAGE\nPLACEHOLDER",
-                        color = CreamWhite.copy(alpha = 0.5f),
-                        textAlign = TextAlign.Center,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp
-                    )
-                }
-            }
         }
     }
 }
