@@ -9,10 +9,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -85,7 +87,7 @@ fun MainMenuScreen(
                 Text(
                     text = "\uD83C\uDFC6 HIGH SCORE: $$highScore",
                     style = MaterialTheme.typography.titleLarge,
-                    color = MoneyGreen,
+                    color = Color(0xFF1F6425),
                     fontWeight = FontWeight.Bold
                 )
 
@@ -98,7 +100,7 @@ fun MainMenuScreen(
                         .fillMaxWidth(0.4f)
                         .height(56.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = WarmOrange,
+                        containerColor = MoneyGreen,
                         contentColor = DarkBrown
                     ),
                     shape = RoundedCornerShape(12.dp),
@@ -108,16 +110,16 @@ fun MainMenuScreen(
                     )
                 ) {
                     Text(
-                        text = "▶  START",
+                        text = "▶ START",
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Start,
                         fontSize = 20.sp,
                         fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 2.sp
+                        letterSpacing = 2.sp,
                     )
                 }
-
                 Spacer(modifier = Modifier.height(16.dp))
             }
-
             Spacer(modifier = Modifier.width(24.dp))
         }
     }
