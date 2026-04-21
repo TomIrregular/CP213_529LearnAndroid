@@ -16,7 +16,16 @@ enum class GrillLevel(val displayName: String) {
 enum class SideCondiment(val displayName: String) {
     SAUCE("Sauce"),
     POTATO("Potato"),
+    BOTH("Sauce & Potato"),
     NONE("No Side")
+}
+
+/** Derives the effective SideCondiment from two independent toggles. */
+fun effectiveSide(sauce: Boolean, potato: Boolean): SideCondiment = when {
+    sauce && potato -> SideCondiment.BOTH
+    sauce           -> SideCondiment.SAUCE
+    potato          -> SideCondiment.POTATO
+    else            -> SideCondiment.NONE
 }
 
 data class Order(
@@ -56,7 +65,8 @@ data class GameState(
     val isGrilling: Boolean = false,
     val grilledLevel: GrillLevel? = null,
     val meatCooked: Boolean = false,
-    val selectedSide: SideCondiment = SideCondiment.NONE,
+    val selectedSauce: Boolean = false,
+    val selectedPotato: Boolean = false,
 
     // Phase
     val gamePhase: GamePhase = GamePhase.PLAYING,

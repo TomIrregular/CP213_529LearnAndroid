@@ -76,7 +76,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 isGrilling = false,
                 grilledLevel = null,
                 meatCooked = false,
-                selectedSide = SideCondiment.NONE,
+                selectedSauce = false,
+                selectedPotato = false,
                 lastEarned = 0
             )
         }
@@ -141,14 +142,15 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 isGrilling = false,
                 grilledLevel = null,
                 meatCooked = false,
-                selectedSide = SideCondiment.NONE,
+                selectedSauce = false,
+                selectedPotato = false,
                 lastEarned = 0
             )
         }
 
         dialogueJob = viewModelScope.launch {
             for (i in words.indices) {
-                delay(400L)
+                delay(200L)
                 _state.update {
                     it.copy(dialogueWords = words.subList(0, i + 1))
                 }
@@ -176,7 +178,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
             while (_state.value.isGrilling && _state.value.grillProgress < 1f) {
                 delay(16L) // ~60 fps
                 _state.update {
-                    it.copy(grillProgress = (it.grillProgress + 0.004f).coerceAtMost(1f))
+                    it.copy(grillProgress = (it.grillProgress + 0.007f).coerceAtMost(1f))
                 }
             }
             if (_state.value.grillProgress >= 1f) {
@@ -191,9 +193,9 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
         val progress = _state.value.grillProgress
         val level = when {
-            progress < 0.33f -> GrillLevel.RARE
-            progress < 0.66f -> GrillLevel.WELL_DONE
-            else -> GrillLevel.OVERGRILLED
+            progress in 0.15f..0.40f -> GrillLevel.RARE
+            progress in 0.60f..0.85f -> GrillLevel.WELL_DONE
+            else -> GrillLevel.OVERGRILLED // Everything else is burnt!
         }
 
         _state.update {
@@ -209,7 +211,11 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     fun selectSide(side: SideCondiment) {
         _state.update {
-            it.copy(selectedSide = if (it.selectedSide == side) SideCondiment.NONE else side)
+            when (side) {
+                SideCondiment.SAUCE  -> it.copy(selectedSauce  = !it.selectedSauce)
+                SideCondiment.POTATO -> it.copy(selectedPotato = !it.selectedPotato)
+                else -> it
+            }
         }
     }
 
@@ -219,10 +225,12 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         val s = _state.value
         val order = s.currentOrder ?: return
 
+        val playerSide = effectiveSide(s.selectedSauce, s.selectedPotato)
+
         var correct = 0
         if (s.selectedMeat == order.meat) correct++
         if (s.grilledLevel == order.grillLevel) correct++
-        if (s.selectedSide == order.side) correct++
+        if (playerSide == order.side) correct++
 
         val earned = 20 * correct
 
@@ -244,7 +252,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
                 isGrilling = false,
                 grilledLevel = null,
                 meatCooked = false,
-                selectedSide = SideCondiment.NONE,
+                selectedSauce = false,
+                selectedPotato = false,
                 lastEarned = 0
             )
         }

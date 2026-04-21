@@ -8,7 +8,7 @@ composeBom = "2024.06.00"
 navigationCompose = "2.7.7"
 room = "2.6.1"
 ksp = "2.0.0-1.0.22"
-coil = "2.6.0"
+coil = "2.7.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }

@@ -19,6 +19,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import android.os.Build
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import coil.decode.GifDecoder
+import coil.decode.ImageDecoderDecoder
 import com.tomweasley.overgrilled.R
 import com.tomweasley.overgrilled.ui.theme.*
 
@@ -28,7 +35,11 @@ fun MainMenuScreen(
     onStartClick: () -> Unit,
     onOptionClick: () -> Unit
 ) {
-    // Subtle flame animation for the title glow
+    var isVisible by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        isVisible = true
+    }
+
     val infiniteTransition = rememberInfiniteTransition(label = "glow")
     val glowAlpha by infiniteTransition.animateFloat(
         initialValue = 0.4f,
@@ -40,87 +51,97 @@ fun MainMenuScreen(
         label = "glowAlpha"
     )
 
-    Box(modifier = Modifier.fillMaxSize()) {
-        // ── Animated GIF Background ──
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(R.drawable.main_menu)
-                .crossfade(true)
-                .build(),
-            contentDescription = "Background",
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
-        )
+    // Wrap the entire screen in AnimatedVisibility
+    AnimatedVisibility(
+        visible = isVisible,
+        enter = fadeIn(animationSpec = tween(1000)),
+        exit = fadeOut()
+    ) {
+        // Adding background(DarkBrown) here prevents any flickering
+        Box(modifier = Modifier.fillMaxSize().background(DarkBrown)) {
 
-        // ── Content ──
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(32.dp),
-            horizontalArrangement = Arrangement.Start,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // ── Left side: Title + High Score + Buttons ──
-            Column(
-                modifier = Modifier.wrapContentWidth(Alignment.Start).padding(start = 16.dp),
-                horizontalAlignment = Alignment.Start,
-                verticalArrangement = Arrangement.Center
+            // ── Animated GIF Background ──
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(R.drawable.main_menu)
+                    .decoderFactory(
+                        if (Build.VERSION.SDK_INT >= 28) ImageDecoderDecoder.Factory()
+                        else GifDecoder.Factory()
+                    )
+                    .crossfade(true)
+                    .build(),
+                contentDescription = "Background",
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Crop
+            )
+
+            // ── Content ──
+            Row(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(32.dp),
+                horizontalArrangement = Arrangement.Start,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Title image
-                Image(
-                    painter = painterResource(id = R.drawable.title),
-                    contentDescription = "Overgrilled Title",
-                    modifier = Modifier
-                        .fillMaxWidth(0.6f)
-                        .shadow(
-                            elevation = 16.dp,
-                            shape = RoundedCornerShape(16.dp),
-                            ambientColor = WarmOrange.copy(alpha = glowAlpha),
-                            spotColor = WarmOrange.copy(alpha = glowAlpha)
-                        ),
-                    contentScale = ContentScale.FillWidth
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // High Score
-                Text(
-                    text = "\uD83C\uDFC6 HIGH SCORE: $$highScore",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = Color(0xFF1F6425),
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // START button
-                Button(
-                    onClick = onStartClick,
-                    modifier = Modifier
-                        .fillMaxWidth(0.4f)
-                        .height(56.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MoneyGreen,
-                        contentColor = DarkBrown
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    elevation = ButtonDefaults.buttonElevation(
-                        defaultElevation = 8.dp,
-                        pressedElevation = 2.dp
-                    )
+                Column(
+                    modifier = Modifier.wrapContentWidth(Alignment.Start).padding(start = 16.dp),
+                    horizontalAlignment = Alignment.Start,
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    Text(
-                        text = "▶ START",
-                        modifier = Modifier.fillMaxWidth(),
-                        textAlign = TextAlign.Start,
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 2.sp,
+                    // Title image
+                    Image(
+                        painter = painterResource(id = R.drawable.title),
+                        contentDescription = "Overgrilled Title",
+                        modifier = Modifier
+                            .fillMaxWidth(0.6f)
+                            .shadow(
+                                elevation = 16.dp,
+                                shape = RoundedCornerShape(16.dp),
+                                ambientColor = WarmOrange.copy(alpha = glowAlpha),
+                                spotColor = WarmOrange.copy(alpha = glowAlpha)
+                            ),
+                        contentScale = ContentScale.FillWidth
                     )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // High Score (Safe syntax)
+                    Text(
+                        text = "\uD83C\uDFC6 HIGH SCORE: $${highScore}",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = Color(0xFF1F6425),
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // START button
+                    Button(
+                        onClick = onStartClick,
+                        modifier = Modifier
+                            .fillMaxWidth(0.4f)
+                            .height(56.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = MoneyGreen,
+                            contentColor = DarkBrown
+                        ),
+                        shape = RoundedCornerShape(12.dp),
+                        elevation = ButtonDefaults.buttonElevation(
+                            defaultElevation = 8.dp,
+                            pressedElevation = 2.dp
+                        )
+                    ) {
+                        Text(
+                            text = "▶ START",
+                            modifier = Modifier.fillMaxWidth(),
+                            textAlign = TextAlign.Start,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 2.sp,
+                        )
+                    }
                 }
-                Spacer(modifier = Modifier.height(16.dp))
             }
-            Spacer(modifier = Modifier.width(24.dp))
         }
     }
 }

@@ -8,7 +8,7 @@ object OrderGenerator {
         name = "Student",
         orderPool = listOf(
             Order(MeatType.BEEF, GrillLevel.WELL_DONE, SideCondiment.POTATO),
-            Order(MeatType.CHICKEN, GrillLevel.WELL_DONE, SideCondiment.POTATO)
+            Order(MeatType.CHICKEN, GrillLevel.WELL_DONE, SideCondiment.NONE)
         )
     )
 
@@ -16,7 +16,9 @@ object OrderGenerator {
         name = "Teacher",
         orderPool = listOf(
             Order(MeatType.FISH, GrillLevel.RARE, SideCondiment.SAUCE),
-            Order(MeatType.PORK, GrillLevel.RARE, SideCondiment.SAUCE)
+            Order(MeatType.PORK, GrillLevel.RARE, SideCondiment.SAUCE),
+            Order(MeatType.BEEF, GrillLevel.WELL_DONE, SideCondiment.BOTH),
+            Order(MeatType.CHICKEN, GrillLevel.WELL_DONE, SideCondiment.BOTH)
         )
     )
 
@@ -37,9 +39,10 @@ object OrderGenerator {
             GrillLevel.OVERGRILLED -> "overgrilled"
         }
         val sideText = when (order.side) {
-            SideCondiment.SAUCE -> "with sauce"
+            SideCondiment.SAUCE  -> "with sauce"
             SideCondiment.POTATO -> "with potato"
-            SideCondiment.NONE -> "with no side"
+            SideCondiment.BOTH   -> "with sauce and potato"
+            SideCondiment.NONE   -> "with nothing on the side"
         }
 
         return when (character.name) {

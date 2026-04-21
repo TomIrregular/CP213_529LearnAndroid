@@ -1,5 +1,6 @@
 package com.tomweasley.overgrilled.screens
 
+import android.os.Build
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Image
@@ -8,11 +9,11 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.BiasAlignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
@@ -27,6 +28,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.decode.GifDecoder
+import coil.decode.ImageDecoderDecoder
 import coil.request.ImageRequest
 import com.tomweasley.overgrilled.R
 import com.tomweasley.overgrilled.data.*
@@ -47,675 +50,318 @@ fun GameScreen(
     val timerColor = if (state.timeRemainingMs < 30_000L) OvergrilledRed else CreamWhite
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // ── Animated GIF Background ──
         AsyncImage(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(R.drawable.main_menu)
-                .crossfade(true)
-                .build(),
+                .decoderFactory(if (Build.VERSION.SDK_INT >= 28) ImageDecoderDecoder.Factory() else GifDecoder.Factory())
+                .crossfade(true).build(),
             contentDescription = "Background",
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop
         )
 
-        // ── Semi-transparent overlay for readability ──
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(DarkBrown.copy(alpha = 0.6f))
-        )
+        Box(modifier = Modifier.fillMaxSize().background(DarkBrown.copy(alpha = 0.6f)))
 
-        // ── Game content ──
         Column(modifier = Modifier.fillMaxSize()) {
-            // ── HUD bar ─────────────────────────────────────────────
+            // HUD
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(MediumBrown.copy(alpha = 0.9f))
-                    .padding(horizontal = 16.dp, vertical = 6.dp),
+                modifier = Modifier.fillMaxWidth().background(MediumBrown.copy(alpha = 0.9f)).padding(horizontal = 16.dp, vertical = 6.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "📅 Day ${state.currentDay}",
-                    color = CreamWhite,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
-                Text(
-                    text = "⏱ %d:%02d".format(minutes, seconds),
-                    color = timerColor,
-                    fontWeight = FontWeight.ExtraBold,
-                    fontSize = 20.sp
-                )
-                Text(
-                    text = "💰 $${state.dailyEarnings} / $${state.dailyQuota}",
-                    color = if (state.dailyEarnings >= state.dailyQuota) MoneyGreen else Gold,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 16.sp
-                )
+                Text("Day ${state.currentDay}", color = CreamWhite, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text("⏱ %d:%02d".format(minutes, seconds), color = timerColor, fontWeight = FontWeight.ExtraBold, fontSize = 20.sp)
+                Text("$${state.dailyEarnings} / $${state.dailyQuota}", color = if (state.dailyEarnings >= state.dailyQuota) MoneyGreen else Gold, fontWeight = FontWeight.Bold, fontSize = 16.sp)
             }
 
-            // ── Main game area ──────────────────────────────────────
-            Row(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                // ═══ LEFT COLUMN: Character + Speech ═══
-                LeftColumn(
-                    state = state,
-                    modifier = Modifier.weight(0.35f)
-                )
-
-                // ═══ CENTER COLUMN: Meat buttons + Side buttons ═══
-                CenterColumn(
-                    state = state,
-                    onSelectMeat = onSelectMeat,
-                    onSelectSide = onSelectSide,
-                    modifier = Modifier.weight(0.25f)
-                )
-
-                // ═══ RIGHT COLUMN: Grill + Dish + Send/Trash ═══
-                RightColumn(
-                    state = state,
-                    onStartGrill = onStartGrill,
-                    onStopGrill = onStopGrill,
-                    onSend = onSend,
-                    onTrash = onTrash,
-                    modifier = Modifier.weight(0.40f)
-                )
+            Row(modifier = Modifier.fillMaxSize().padding(8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                LeftColumn(state = state, modifier = Modifier.weight(0.35f))
+                CenterColumn(state = state, onSelectMeat = onSelectMeat, onSelectSide = onSelectSide, modifier = Modifier.weight(0.25f))
+                RightColumn(state = state, onStartGrill = onStartGrill, onStopGrill = onStopGrill, onSend = onSend, onTrash = onTrash, modifier = Modifier.weight(0.40f))
             }
         }
     }
 }
 
-// ────────────────────────────────────────────────────────────────────────
-// LEFT COLUMN
-// ────────────────────────────────────────────────────────────────────────
+// ── DRAWABLE HELPERS ──────────────────────────────────────────────────
+
+private fun getMeatSelectDrawable(meat: MeatType): Int = when (meat) {
+    MeatType.BEEF    -> R.drawable.select_beef
+    MeatType.CHICKEN -> R.drawable.select_chicken
+    MeatType.PORK    -> R.drawable.select_pork
+    MeatType.FISH    -> R.drawable.select_fish
+}
+
+private fun getSideSelectDrawable(side: SideCondiment): Int = when (side) {
+    SideCondiment.SAUCE  -> R.drawable.select_sauce
+    SideCondiment.POTATO -> R.drawable.select_potato
+    else                 -> 0
+}
+
+/**
+ * Merged Meat-on-Grill logic to remove double logic.
+ * Handles both idle and cooking states.
+ */
+private fun getGrillMeatDrawable(meat: MeatType, isCooking: Boolean): Int = when (meat) {
+    MeatType.BEEF    -> if (isCooking) R.drawable.grill_beef1    else R.drawable.grill_beef
+    MeatType.CHICKEN -> if (isCooking) R.drawable.grill_chicken1 else R.drawable.grill_chicken
+    MeatType.PORK    -> if (isCooking) R.drawable.grill_pork1    else R.drawable.grill_pork
+    MeatType.FISH    -> if (isCooking) R.drawable.grill_fish1    else R.drawable.grill_fish
+}
+
+/**
+ * Returns the correct dish image drawable for the given combination of
+ * meat, grill level, and side condiment (none / sauce / potato / both).
+ */
+private fun getDishDrawable(meat: MeatType, level: GrillLevel, side: SideCondiment): Int {
+    return when (meat) {
+        MeatType.BEEF -> when (side) {
+            SideCondiment.NONE   -> when (level) {
+                GrillLevel.RARE        -> R.drawable.dish_beef_rare
+                GrillLevel.WELL_DONE   -> R.drawable.dish_beef_well_done
+                GrillLevel.OVERGRILLED -> R.drawable.dish_beef_overgrilled
+            }
+            SideCondiment.SAUCE  -> when (level) {
+                GrillLevel.RARE        -> R.drawable.dish_beef_sauce_rare
+                GrillLevel.WELL_DONE   -> R.drawable.dish_beef_sauce_well_done
+                GrillLevel.OVERGRILLED -> R.drawable.dish_beef_sauce_overgrilled
+            }
+            SideCondiment.POTATO -> when (level) {
+                GrillLevel.RARE        -> R.drawable.dish_beef_potato_rare
+                GrillLevel.WELL_DONE   -> R.drawable.dish_beef_potato_well_done
+                GrillLevel.OVERGRILLED -> R.drawable.dish_beef_potato_overgrilled
+            }
+            SideCondiment.BOTH   -> when (level) {
+                GrillLevel.RARE        -> R.drawable.dish_beef_full_rare
+                GrillLevel.WELL_DONE   -> R.drawable.dish_beef_full_well_done
+                GrillLevel.OVERGRILLED -> R.drawable.dish_beef_full_overgrilled
+            }
+        }
+        MeatType.CHICKEN -> when (side) {
+            SideCondiment.NONE   -> when (level) {
+                GrillLevel.RARE        -> R.drawable.dish_chicken_rare
+                GrillLevel.WELL_DONE   -> R.drawable.dish_chicken_well_done
+                GrillLevel.OVERGRILLED -> R.drawable.dish_chicken_overgrilled
+            }
+            SideCondiment.SAUCE  -> when (level) {
+                GrillLevel.RARE        -> R.drawable.dish_chicken_sauce_rare
+                GrillLevel.WELL_DONE   -> R.drawable.dish_chicken_sauce_well_done
+                GrillLevel.OVERGRILLED -> R.drawable.dish_chicken_sauce_overgrilled
+            }
+            SideCondiment.POTATO -> when (level) {
+                GrillLevel.RARE        -> R.drawable.dish_chicken_potato_rare
+                GrillLevel.WELL_DONE   -> R.drawable.dish_chicken_potato_well_done
+                GrillLevel.OVERGRILLED -> R.drawable.dish_chicken_potato_overgrilled
+            }
+            SideCondiment.BOTH   -> when (level) {
+                GrillLevel.RARE        -> R.drawable.dish_chicken_full_rare
+                GrillLevel.WELL_DONE   -> R.drawable.dish_chicken_full_well_done
+                GrillLevel.OVERGRILLED -> R.drawable.dish_chicken_full_overgrilled
+            }
+        }
+        MeatType.PORK -> when (side) {
+            SideCondiment.NONE   -> when (level) {
+                GrillLevel.RARE        -> R.drawable.dish_pork_rare
+                GrillLevel.WELL_DONE   -> R.drawable.dish_pork_well_done
+                GrillLevel.OVERGRILLED -> R.drawable.dish_pork_overgrilled
+            }
+            SideCondiment.SAUCE  -> when (level) {
+                GrillLevel.RARE        -> R.drawable.dish_pork_sauce_rare
+                GrillLevel.WELL_DONE   -> R.drawable.dish_pork_sauce_well_done
+                GrillLevel.OVERGRILLED -> R.drawable.dish_pork_sauce_overgrilled
+            }
+            SideCondiment.POTATO -> when (level) {
+                GrillLevel.RARE        -> R.drawable.dish_pork_potato_rare
+                GrillLevel.WELL_DONE   -> R.drawable.dish_pork_potato_well_done
+                GrillLevel.OVERGRILLED -> R.drawable.dish_pork_potato_overgrilled
+            }
+            SideCondiment.BOTH   -> when (level) {
+                GrillLevel.RARE        -> R.drawable.dish_pork_full_rare
+                GrillLevel.WELL_DONE   -> R.drawable.dish_pork_full_well_done
+                GrillLevel.OVERGRILLED -> R.drawable.dish_pork_full_overgrilled
+            }
+        }
+        MeatType.FISH -> when (side) {
+            SideCondiment.NONE   -> when (level) {
+                GrillLevel.RARE        -> R.drawable.dish_fish_rare
+                GrillLevel.WELL_DONE   -> R.drawable.dish_fish_well_done
+                GrillLevel.OVERGRILLED -> R.drawable.dish_fish_overgrilled
+            }
+            SideCondiment.SAUCE  -> when (level) {
+                GrillLevel.RARE        -> R.drawable.dish_fish_sauce_rare
+                GrillLevel.WELL_DONE   -> R.drawable.dish_fish_sauce_well_done
+                GrillLevel.OVERGRILLED -> R.drawable.dish_fish_sauce_overgrilled
+            }
+            SideCondiment.POTATO -> when (level) {
+                GrillLevel.RARE        -> R.drawable.dish_fish_potato_rare
+                GrillLevel.WELL_DONE   -> R.drawable.dish_fish_potato_well_done
+                GrillLevel.OVERGRILLED -> R.drawable.dish_fish_potato_overgrilled
+            }
+            SideCondiment.BOTH   -> when (level) {
+                GrillLevel.RARE        -> R.drawable.dish_fish_full_rare
+                GrillLevel.WELL_DONE   -> R.drawable.dish_fish_full_well_done
+                GrillLevel.OVERGRILLED -> R.drawable.dish_fish_full_overgrilled
+            }
+        }
+    }
+}
+
+// ── COLUMN COMPONENTS ─────────────────────────────────────────────────
 
 @Composable
 private fun LeftColumn(state: GameState, modifier: Modifier = Modifier) {
-    Box(modifier = modifier.fillMaxHeight()) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            // Character image placeholder
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(LightBrown)
-                    .border(2.dp, WarmOrange.copy(alpha = 0.4f), RoundedCornerShape(12.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(
-                        text = "👤",
-                        fontSize = 48.sp
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = state.currentCharacter?.name ?: "...",
-                        color = CreamWhite,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp
-                    )
-                    Text(
-                        text = "CHARACTER",
-                        color = CreamWhite.copy(alpha = 0.5f),
-                        fontSize = 11.sp
-                    )
-                }
+    Column(modifier = modifier.fillMaxHeight()) {
+        Box(modifier = Modifier.fillMaxWidth().weight(1f).clip(RoundedCornerShape(12.dp)).background(LightBrown).border(2.dp, WarmOrange.copy(alpha = 0.4f), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text("👤", fontSize = 48.sp)
+                Text(state.currentCharacter?.name ?: "...", color = CreamWhite, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text("CHARACTER", color = CreamWhite.copy(alpha = 0.5f), fontSize = 11.sp)
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Speech box
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 80.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(
-                                Color(0xFF4E342E),
-                                Color(0xFF3E2723)
-                            )
-                        )
-                    )
-                    .border(2.dp, Gold.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
-                    .padding(12.dp),
-                contentAlignment = Alignment.TopStart
-            ) {
-                Column {
-                    Text(
-                        text = "💬 ${state.currentCharacter?.name ?: ""}",
-                        color = Gold,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 12.sp
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = state.dialogueWords.joinToString(" "),
-                        color = CreamWhite,
-                        fontSize = 14.sp,
-                        fontStyle = FontStyle.Italic
-                    )
-                }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Box(modifier = Modifier.fillMaxWidth().heightIn(min = 80.dp).clip(RoundedCornerShape(12.dp)).background(Brush.verticalGradient(listOf(Color(0xFF4E342E), Color(0xFF3E2723)))).border(2.dp, Gold.copy(alpha = 0.5f), RoundedCornerShape(12.dp)).padding(12.dp)) {
+            Column {
+                Text("💬 ${state.currentCharacter?.name ?: ""}", color = Gold, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                Text(state.dialogueWords.joinToString(" "), color = CreamWhite, fontSize = 14.sp, fontStyle = FontStyle.Italic)
             }
         }
     }
 }
 
-// ────────────────────────────────────────────────────────────────────────
-// CENTER COLUMN
-// ────────────────────────────────────────────────────────────────────────
-
-/**
- * Returns the drawable resource ID for the meat selection button image.
- */
-private fun getMeatSelectDrawable(meat: MeatType): Int {
-    return when (meat) {
-        MeatType.BEEF -> R.drawable.select_beef
-        MeatType.CHICKEN -> R.drawable.select_chicken
-        MeatType.PORK -> R.drawable.select_pork
-        MeatType.FISH -> R.drawable.select_fish
-    }
-}
-
-/**
- * Returns the drawable resource ID for meat on the grill (idle).
- */
-private fun getGrillMeatDrawable(meat: MeatType): Int {
-    return when (meat) {
-        MeatType.BEEF -> R.drawable.grill_beef
-        MeatType.CHICKEN -> R.drawable.grill_chicken
-        MeatType.PORK -> R.drawable.grill_pork
-        MeatType.FISH -> R.drawable.grill_fish
-    }
-}
-
-/**
- * Returns the drawable resource ID for meat on the grill (cooking/fire).
- */
-private fun getGrillMeatCookingDrawable(meat: MeatType): Int {
-    return when (meat) {
-        MeatType.BEEF -> R.drawable.grill_beef1
-        MeatType.CHICKEN -> R.drawable.grill_chicken1
-        MeatType.PORK -> R.drawable.grill_pork1
-        MeatType.FISH -> R.drawable.grill_fish1
-    }
-}
-
 @Composable
-private fun CenterColumn(
-    state: GameState,
-    onSelectMeat: (MeatType) -> Unit,
-    onSelectSide: (SideCondiment) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier.fillMaxHeight(),
-        verticalArrangement = Arrangement.SpaceBetween
-    ) {
-        // Meat buttons (2×2 grid)
-        Column(
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-            modifier = Modifier.weight(1f)
-        ) {
-            val meats = listOf(
-                MeatType.BEEF to BeefBrown,
-                MeatType.CHICKEN to ChickenOrange,
-                MeatType.PORK to PorkPink,
-                MeatType.FISH to FishBlue
-            )
-
+private fun CenterColumn(state: GameState, onSelectMeat: (MeatType) -> Unit, onSelectSide: (SideCondiment) -> Unit, modifier: Modifier = Modifier) {
+    Column(modifier = modifier.fillMaxHeight(), verticalArrangement = Arrangement.SpaceBetween) {
+        Column(verticalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.weight(1f)) {
+            val meats = listOf(MeatType.BEEF to BeefBrown, MeatType.CHICKEN to ChickenOrange, MeatType.PORK to PorkPink, MeatType.FISH to FishBlue)
             meats.chunked(2).forEach { row ->
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    row.forEach { (meat, color) ->
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
+                    row.forEach { (meat, _) ->
                         val isSelected = state.selectedMeat == meat
                         val isDisabled = state.meatCooked
-
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .aspectRatio(1f)
-                                .clip(RoundedCornerShape(10.dp))
-                                .then(
-                                    if (isDisabled) {
-                                        Modifier.background(DisabledGray.copy(alpha = 0.3f))
-                                    } else {
-                                        Modifier
-                                    }
-                                )
-                                .then(
-                                    if (isSelected) {
-                                        Modifier.border(
-                                            3.dp,
-                                            Gold,
-                                            RoundedCornerShape(10.dp)
-                                        )
-                                    } else {
-                                        Modifier
-                                    }
-                                )
-                                .clickable(enabled = !isDisabled) {
-                                    onSelectMeat(meat)
-                                },
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Image(
-                                painter = painterResource(id = getMeatSelectDrawable(meat)),
-                                contentDescription = meat.displayName,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .clip(RoundedCornerShape(10.dp)),
-                                contentScale = ContentScale.Crop,
-                                alpha = if (isDisabled) 0.3f else if (isSelected) 1f else 0.7f
-                            )
+                        Box(modifier = Modifier.weight(1f).aspectRatio(1f).clip(RoundedCornerShape(10.dp)).background(if (isDisabled) DisabledGray.copy(alpha = 0.3f) else Color.Transparent).border(if (isSelected) 3.dp else 0.dp, Gold, RoundedCornerShape(10.dp)).clickable(enabled = !isDisabled) { onSelectMeat(meat) }, contentAlignment = Alignment.Center) {
+                            Image(painter = painterResource(id = getMeatSelectDrawable(meat)), contentDescription = meat.displayName, modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop, alpha = if (isDisabled) 0.3f else if (isSelected) 1f else 0.7f)
                         }
                     }
                 }
             }
         }
-
         Spacer(modifier = Modifier.height(8.dp))
-
-        // Side buttons (SAUCE + POTATO)
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            SideButton(
-                label = "Sauce",
-                emoji = "🫙",
-                color = SauceRed,
-                isSelected = state.selectedSide == SideCondiment.SAUCE,
-                onClick = { onSelectSide(SideCondiment.SAUCE) },
-                modifier = Modifier.weight(1f)
-            )
-            SideButton(
-                label = "Potato",
-                emoji = "🥔",
-                color = PotatoYellow,
-                isSelected = state.selectedSide == SideCondiment.POTATO,
-                onClick = { onSelectSide(SideCondiment.POTATO) },
-                modifier = Modifier.weight(1f)
-            )
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            SideButton(side = SideCondiment.SAUCE,   isSelected = state.selectedSauce,   onClick = { onSelectSide(SideCondiment.SAUCE) },   modifier = Modifier.weight(1f))
+            SideButton(side = SideCondiment.POTATO,  isSelected = state.selectedPotato,  onClick = { onSelectSide(SideCondiment.POTATO) }, modifier = Modifier.weight(1f))
         }
     }
 }
 
 @Composable
-private fun SideButton(
-    label: String,
-    emoji: String,
-    color: Color,
-    isSelected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Button(
-        onClick = onClick,
-        modifier = modifier.height(56.dp),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = if (isSelected) color else color.copy(alpha = 0.4f),
-            contentColor = if (isSelected) DarkBrown else CreamWhite
-        ),
-        shape = CircleShape,
-        elevation = ButtonDefaults.buttonElevation(
-            defaultElevation = if (isSelected) 8.dp else 2.dp
-        ),
-        border = if (isSelected) {
-            androidx.compose.foundation.BorderStroke(2.dp, Gold)
-        } else null
-    ) {
-        Text(
-            text = "$emoji $label",
-            fontWeight = FontWeight.Bold,
-            fontSize = 12.sp
-        )
-    }
-}
-
-// ────────────────────────────────────────────────────────────────────────
-// RIGHT COLUMN
-// ────────────────────────────────────────────────────────────────────────
-
-@Composable
-private fun RightColumn(
-    state: GameState,
-    onStartGrill: () -> Unit,
-    onStopGrill: () -> Unit,
-    onSend: () -> Unit,
-    onTrash: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier.fillMaxHeight(),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        // ── Grill area ──────────────────────────────────────────
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .clip(RoundedCornerShape(12.dp))
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFF424242),
-                            Color(0xFF212121)
-                        )
-                    )
-                )
-                .border(2.dp, Color(0xFF616161), RoundedCornerShape(12.dp))
-                .padding(8.dp)
-        ) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                val canGrill = state.selectedMeat != null && !state.meatCooked
-
-                // Grill image — now the interactive element for cooking
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .weight(1f)
-                        .clip(RoundedCornerShape(8.dp))
-                        .then(
-                            if (canGrill) {
-                                Modifier.pointerInput(Unit) {
-                                    detectTapGestures(
-                                        onPress = {
-                                            onStartGrill()
-                                            tryAwaitRelease()
-                                            onStopGrill()
-                                        }
-                                    )
-                                }
-                            } else Modifier
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    // Determine which grill image to show
-                    val grillDrawable = when {
-                        state.selectedMeat == null -> R.drawable.grill
-                        state.isGrilling -> getGrillMeatCookingDrawable(state.selectedMeat)
-                        else -> getGrillMeatDrawable(state.selectedMeat)
-                    }
-
-                    Image(
-                        painter = painterResource(id = grillDrawable),
-                        contentDescription = when {
-                            state.selectedMeat == null -> "Empty grill"
-                            state.isGrilling -> "Cooking ${state.selectedMeat.displayName}"
-                            else -> "${state.selectedMeat.displayName} on grill"
-                        },
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .clip(RoundedCornerShape(8.dp)),
-                        contentScale = ContentScale.Crop
-                    )
-
-                    // Overlay grill level text when meat is cooked
-                    if (state.selectedMeat != null && state.grilledLevel != null && !state.isGrilling) {
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.BottomCenter)
-                                .padding(bottom = 4.dp)
-                                .background(
-                                    DarkBrown.copy(alpha = 0.7f),
-                                    RoundedCornerShape(6.dp)
-                                )
-                                .padding(horizontal = 8.dp, vertical = 2.dp)
-                        ) {
-                            Text(
-                                text = state.grilledLevel.displayName,
-                                color = when (state.grilledLevel) {
-                                    GrillLevel.RARE -> RareGreen
-                                    GrillLevel.WELL_DONE -> WellDoneAmber
-                                    GrillLevel.OVERGRILLED -> OvergrilledRed
-                                },
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 13.sp
-                            )
-                        }
-                    }
-
-                    // Hint text
-                    if (canGrill) {
-                        Box(
-                            modifier = Modifier
-                                .align(Alignment.TopCenter)
-                                .padding(top = 4.dp)
-                                .background(
-                                    DarkBrown.copy(alpha = 0.7f),
-                                    RoundedCornerShape(6.dp)
-                                )
-                                .padding(horizontal = 8.dp, vertical = 2.dp)
-                        ) {
-                            Text(
-                                text = if (state.isGrilling) "🔥 Release to stop!" else "Hold to COOK",
-                                color = if (state.isGrilling) WarmOrange else CreamWhite.copy(alpha = 0.8f),
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(6.dp))
-
-                // ── Grill bar (visual progress indicator) ───────────
-                GrillBar(
-                    progress = state.grillProgress,
-                    isGrilling = state.isGrilling,
-                    meatCooked = state.meatCooked,
-                    hasMeat = state.selectedMeat != null
-                )
+private fun SideButton(side: SideCondiment, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+    Box(modifier = modifier.height(64.dp).clip(RoundedCornerShape(12.dp)).background(if (isSelected) Gold.copy(alpha = 0.2f) else Color.Transparent).border(if (isSelected) 3.dp else 1.dp, if (isSelected) Gold else CreamWhite.copy(alpha = 0.3f), RoundedCornerShape(12.dp)).clickable { onClick() }, contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            val imageRes = getSideSelectDrawable(side)
+            if (imageRes != 0) {
+                Image(painter = painterResource(id = imageRes), contentDescription = side.displayName, modifier = Modifier.fillMaxSize(), alpha = if (isSelected) 1f else 0.6f)
             }
         }
+    }
+}
 
-        // ── Bottom row: Dish result + Send/Trash ────────────────
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(100.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            // Dish result
+@Composable
+private fun RightColumn(state: GameState, onStartGrill: () -> Unit, onStopGrill: () -> Unit, onSend: () -> Unit, onTrash: () -> Unit, modifier: Modifier = Modifier) {
+    Column(modifier = modifier.fillMaxHeight(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Box(modifier = Modifier.fillMaxWidth().weight(1f).clip(RoundedCornerShape(12.dp)).background(Brush.verticalGradient(listOf(Color(0xFF424242), Color(0xFF212121)))).border(2.dp, Color(0xFF616161), RoundedCornerShape(12.dp)).padding(8.dp)) {
+            Column(modifier = Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.SpaceBetween) {
+                val canGrill = state.selectedMeat != null && !state.meatCooked
+                Box(modifier = Modifier.fillMaxWidth().weight(1f).clip(RoundedCornerShape(8.dp)).then(if (canGrill) Modifier.pointerInput(Unit) { detectTapGestures(onPress = { onStartGrill(); tryAwaitRelease(); onStopGrill() }) } else Modifier), contentAlignment = Alignment.Center) {
+                    val grillDrawable = if (state.selectedMeat == null) R.drawable.grill else getGrillMeatDrawable(state.selectedMeat, state.isGrilling)
+                    Image(painter = painterResource(id = grillDrawable), contentDescription = "Grill", modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+
+                    if (state.selectedMeat != null && state.grilledLevel != null && !state.isGrilling) {
+                        Text(state.grilledLevel.displayName, color = when(state.grilledLevel){ GrillLevel.RARE -> RareGreen; GrillLevel.WELL_DONE -> WellDoneAmber; else -> OvergrilledRed }, modifier = Modifier.align(Alignment.BottomCenter).padding(4.dp).background(DarkBrown.copy(alpha = 0.7f), RoundedCornerShape(6.dp)).padding(horizontal = 8.dp), fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                    }
+                }
+                GrillBar(progress = state.grillProgress, isGrilling = state.isGrilling, meatCooked = state.meatCooked, hasMeat = state.selectedMeat != null)
+            }
+        }
+        Row(modifier = Modifier.fillMaxWidth().height(100.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             Box(
                 modifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight()
+                    .weight(1f).fillMaxHeight()
                     .clip(RoundedCornerShape(12.dp))
                     .background(LightBrown.copy(alpha = 0.6f))
-                    .border(2.dp, WarmOrange.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-                    .padding(8.dp),
+                    .border(2.dp, WarmOrange.copy(alpha = 0.3f), RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                if (state.meatCooked && state.selectedMeat != null) {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(
-                            text = "🍽️ DISH",
-                            color = Gold,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 12.sp
-                        )
-                        Text(
-                            text = buildString {
-                                append(state.grilledLevel?.displayName ?: "")
-                                append(" ")
-                                append(state.selectedMeat.displayName)
-                                if (state.selectedSide != SideCondiment.NONE) {
-                                    append("\n+ ${state.selectedSide.displayName}")
-                                }
-                            },
-                            color = CreamWhite,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                } else {
-                    Text(
-                        text = "DISH\nRESULT",
-                        color = CreamWhite.copy(alpha = 0.3f),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp,
-                        textAlign = TextAlign.Center
+                if (state.meatCooked && state.selectedMeat != null && state.grilledLevel != null) {
+                    val side = effectiveSide(state.selectedSauce, state.selectedPotato)
+                    Image(
+                        painter = painterResource(id = getDishDrawable(state.selectedMeat, state.grilledLevel, side)),
+                        contentDescription = "Dish result",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = ContentScale.Fit
                     )
+                } else {
+                    Text("DISH\nRESULT", color = CreamWhite.copy(alpha = 0.3f), textAlign = TextAlign.Center, fontSize = 13.sp)
                 }
             }
-
-            // Send / Trash buttons
-            Column(
-                verticalArrangement = Arrangement.spacedBy(6.dp),
-                modifier = Modifier.fillMaxHeight()
-            ) {
-                Button(
-                    onClick = onSend,
-                    modifier = Modifier
-                        .width(72.dp)
-                        .weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MoneyGreen,
-                        contentColor = DarkBrown
-                    ),
-                    shape = RoundedCornerShape(10.dp),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
-                ) {
-                    Text(
-                        text = "SEND",
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 12.sp
-                    )
-                }
-
-                Button(
-                    onClick = onTrash,
-                    modifier = Modifier
-                        .width(72.dp)
-                        .weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = TrashGray,
-                        contentColor = CreamWhite
-                    ),
-                    shape = RoundedCornerShape(10.dp),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 4.dp)
-                ) {
-                    Text(
-                        text = "TRASH",
-                        fontWeight = FontWeight.ExtraBold,
-                        fontSize = 11.sp
-                    )
-                }
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Button(onClick = onSend,
+                    modifier = Modifier.width(72.dp).weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = MoneyGreen, contentColor = DarkBrown),
+                    shape = RoundedCornerShape(10.dp))
+                    { Text("✓", fontSize = 12.sp)}
+                Button(onClick = onTrash,
+                    modifier = Modifier.width(72.dp).weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = TrashGray, contentColor = CreamWhite),
+                    shape = RoundedCornerShape(10.dp))
+                { Text("✗", fontSize = 11.sp)}
             }
         }
     }
 }
 
-// ────────────────────────────────────────────────────────────────────────
-// GRILL BAR (visual-only progress indicator)
-// ────────────────────────────────────────────────────────────────────────
-
 @Composable
-private fun GrillBar(
-    progress: Float,
-    isGrilling: Boolean,
-    meatCooked: Boolean,
-    hasMeat: Boolean
-) {
+private fun GrillBar(progress: Float, isGrilling: Boolean, meatCooked: Boolean, hasMeat: Boolean) {
     val barAlpha = if (hasMeat && !meatCooked) 1f else 0.3f
-
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.fillMaxWidth()
-    ) {
-        // Bar with 3 colored zones
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(24.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(12.dp))
-        ) {
-            // 3 colored zone background
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+        Box(modifier = Modifier.fillMaxWidth().height(24.dp).clip(RoundedCornerShape(12.dp)).border(1.dp, Color.White.copy(alpha = 0.3f), RoundedCornerShape(12.dp))) {
             Row(modifier = Modifier.fillMaxSize()) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .background(RareGreen.copy(alpha = barAlpha))
-                )
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .background(WellDoneAmber.copy(alpha = barAlpha))
-                )
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .background(OvergrilledRed.copy(alpha = barAlpha))
-                )
+                Box(modifier = Modifier.weight(0.15f).fillMaxHeight().background(OvergrilledRed.copy(alpha = barAlpha)))
+                Box(modifier = Modifier.weight(0.25f).fillMaxHeight().background(RareGreen.copy(alpha = barAlpha)))
+                Box(modifier = Modifier.weight(0.20f).fillMaxHeight().background(OvergrilledRed.copy(alpha = barAlpha)))
+                Box(modifier = Modifier.weight(0.25f).fillMaxHeight().background(WellDoneAmber.copy(alpha = barAlpha)))
+                Box(modifier = Modifier.weight(0.15f).fillMaxHeight().background(OvergrilledRed.copy(alpha = barAlpha)))
             }
-
-            // Zone divider lines
-            Row(modifier = Modifier.fillMaxSize()) {
-                Spacer(modifier = Modifier.weight(1f))
-                Box(
-                    modifier = Modifier
-                        .width(2.dp)
-                        .fillMaxHeight()
-                        .background(Color.White.copy(alpha = 0.5f))
-                )
-                Spacer(modifier = Modifier.weight(1f))
-                Box(
-                    modifier = Modifier
-                        .width(2.dp)
-                        .fillMaxHeight()
-                        .background(Color.White.copy(alpha = 0.5f))
-                )
-                Spacer(modifier = Modifier.weight(1f))
-            }
-
-            // Arrow indicator
             if (progress > 0f || isGrilling) {
-                BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                    val offsetX = maxWidth * progress
-                    Box(
-                        modifier = Modifier
-                            .offset(x = offsetX - 3.dp)
-                            .width(6.dp)
-                            .fillMaxHeight()
-                            .clip(RoundedCornerShape(3.dp))
-                            .background(Color.White)
-                            .border(1.dp, DarkBrown, RoundedCornerShape(3.dp))
-                    )
+                Box(modifier = Modifier.fillMaxSize()) {
+                    Box(modifier = Modifier.fillMaxHeight()
+                        .width(6.dp)
+                        .align(BiasAlignment((progress * 2f) - 1f, 0f))
+                        .clip(RoundedCornerShape(3.dp))
+                        .background(Color.White)
+                        .border(1.dp, DarkBrown, RoundedCornerShape(3.dp)))
                 }
             }
         }
-
-        Spacer(modifier = Modifier.height(4.dp))
-
-        // Zone labels
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceAround
-        ) {
-            Text("Rare", color = RareGreen, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-            Text("Well Done", color = WellDoneAmber, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-            Text("Over!", color = OvergrilledRed, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+        Row(modifier = Modifier.fillMaxWidth()) {
+            Spacer(modifier = Modifier.weight(0.15f)) // Overgrilled zone
+            Text(
+                text = "Rare",
+                modifier = Modifier.weight(0.25f),
+                textAlign = TextAlign.Center,
+                color = RareGreen,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.weight(0.20f)) // Overgrilled zone
+            Text(
+                text = "Well Done",
+                modifier = Modifier.weight(0.25f),
+                textAlign = TextAlign.Center,
+                color = WellDoneAmber,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold
+            )
+            Spacer(modifier = Modifier.weight(0.15f)) // Overgrilled zone
         }
     }
 }
