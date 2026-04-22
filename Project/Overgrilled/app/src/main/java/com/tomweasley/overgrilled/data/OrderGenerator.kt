@@ -4,25 +4,25 @@ import kotlin.random.Random
 
 object OrderGenerator {
 
-    private val student = Character(
-        name = "Student",
+    private val sc = Character(
+        name = "Science",
         orderPool = listOf(
-            Order(MeatType.BEEF, GrillLevel.WELL_DONE, SideCondiment.POTATO),
-            Order(MeatType.CHICKEN, GrillLevel.WELL_DONE, SideCondiment.NONE)
+            Order(MeatType.BEEF, GrillLevel.WELL_DONE, SideCondiment.NONE),
+            Order(MeatType.CHICKEN, GrillLevel.WELL_DONE, SideCondiment.NONE),
+            Order(MeatType.PORK, GrillLevel.WELL_DONE, SideCondiment.NONE),
+            Order(MeatType.FISH, GrillLevel.WELL_DONE, SideCondiment.NONE)
         )
     )
 
-    private val teacher = Character(
-        name = "Teacher",
+    private val hm = Character(
+        name = "Humanity",
         orderPool = listOf(
-            Order(MeatType.FISH, GrillLevel.RARE, SideCondiment.SAUCE),
             Order(MeatType.PORK, GrillLevel.RARE, SideCondiment.SAUCE),
-            Order(MeatType.BEEF, GrillLevel.WELL_DONE, SideCondiment.BOTH),
-            Order(MeatType.CHICKEN, GrillLevel.WELL_DONE, SideCondiment.BOTH)
+            Order(MeatType.CHICKEN, GrillLevel.WELL_DONE, SideCondiment.POTATO)
         )
     )
 
-    private val characters = listOf(student, teacher)
+    private val characters = listOf(sc, hm)
 
     /** Returns a random (Character, Order) pair. */
     fun generateOrder(): Pair<Character, Order> {
@@ -46,16 +46,16 @@ object OrderGenerator {
         }
 
         return when (character.name) {
-            "Student" -> listOf(
-                "Hey! I'd like a $grillText ${order.meat.displayName.lowercase()} steak $sideText please!",
-                "Hi there! Can I get a $grillText ${order.meat.displayName.lowercase()} $sideText?",
-                "Yo! One $grillText ${order.meat.displayName.lowercase()} steak $sideText thanks!"
+            "Science" -> listOf(
+                "One $grillText ${order.meat.displayName.lowercase()} to go, please!",
+                "Could I get $grillText ${order.meat.displayName.lowercase()}? Thank you.",
+                "$grillText ${order.meat.displayName.lowercase()} $sideText... Please!"
             ).random()
 
-            "Teacher" -> listOf(
-                "Good day. I'll have a $grillText ${order.meat.displayName.lowercase()} steak $sideText.",
-                "Hello. One $grillText ${order.meat.displayName.lowercase()} $sideText if you please.",
-                "Excuse me. I'd like a $grillText ${order.meat.displayName.lowercase()} steak $sideText."
+            "Humanity" -> listOf(
+                "Hey! I'll have my usual please. You know, $grillText ${order.meat.displayName.lowercase()} $sideText.",
+                "Sooo many choices to choose from! ${order.meat.displayName} looks good. I'd like that $grillText $sideText!",
+                "Hey-o! Good business today? $grillText ${order.meat.displayName.lowercase()}, please. Oh, and $sideText. Can't forget that!"
             ).random()
 
             else -> "I want a $grillText ${order.meat.displayName.lowercase()} steak $sideText."

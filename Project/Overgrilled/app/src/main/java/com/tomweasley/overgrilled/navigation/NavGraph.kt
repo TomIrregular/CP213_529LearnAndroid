@@ -66,7 +66,12 @@ fun NavGraph(gameViewModel: GameViewModel = viewModel()) {
                         dailyEarnings = state.dailyEarnings,
                         dailyQuota = state.dailyQuota,
                         totalMoney = state.totalMoney,
-                        onContinue = gameViewModel::continueToNextDay
+                        onContinue = gameViewModel::continueToNextDay,
+                        onMainMenu = {
+                            navController.navigate("main_menu") {
+                                popUpTo(0) { inclusive = true }
+                            }
+                        }
                     )
                 }
 
@@ -76,7 +81,6 @@ fun NavGraph(gameViewModel: GameViewModel = viewModel()) {
                         dailyEarnings = state.dailyEarnings,
                         dailyQuota = state.dailyQuota,
                         totalMoney = state.totalMoney,
-                        highScore = state.highScore,
                         onBackToMenu = {
                             navController.navigate("main_menu") {
                                 popUpTo(0) { inclusive = true }

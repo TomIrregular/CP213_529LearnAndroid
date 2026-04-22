@@ -1,19 +1,19 @@
 package com.tomweasley.overgrilled.screens
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.tomweasley.overgrilled.R
 import com.tomweasley.overgrilled.ui.theme.*
 
 @Composable
@@ -22,85 +22,93 @@ fun SummaryScreen(
     dailyEarnings: Int,
     dailyQuota: Int,
     totalMoney: Int,
-    onContinue: () -> Unit
+    onContinue: () -> Unit,
+    onMainMenu: () -> Unit
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.radialGradient(
-                    colors = listOf(MediumBrown, DarkBrown)
-                )
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Box(
+    Box(modifier = Modifier.fillMaxSize()) {
+        // --- BACKGROUND ---
+        Image(
+            painter = painterResource(id = R.drawable.summary_screen),
+            contentDescription = null,
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        // --- CONTENT OVERLAY ---
+        Column(
             modifier = Modifier
-                .fillMaxWidth(0.5f)
-                .clip(RoundedCornerShape(20.dp))
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            LightBrown,
-                            MediumBrown
-                        )
-                    )
-                )
-                .border(3.dp, Gold.copy(alpha = 0.6f), RoundedCornerShape(20.dp))
-                .padding(32.dp)
+                .fillMaxSize()
+                .padding(horizontal = 64.dp)
+                .padding(top = 80.dp, bottom = 32.dp) // Pushed everything down from the top
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxWidth()
+            // Header Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
             ) {
+                // Using weight pushes the text as far right as possible
+                Spacer(modifier = Modifier.weight(1f))
+
                 Text(
-                    text = "🎉 DAY $currentDay COMPLETE!",
-                    fontSize = 28.sp,
+                    text = "Day $currentDay passed!",
+                    fontSize = 24.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = Gold,
-                    letterSpacing = 2.sp,
-                    textAlign = TextAlign.Center
+                    color = Color(0xFF8B0000),
+                    letterSpacing = 1.sp,
+                    modifier = Modifier.padding(end = 40.dp) // Keeps it from hitting the very edge
                 )
+            }
 
-                HorizontalDivider(
-                    color = Gold.copy(alpha = 0.3f),
-                    thickness = 1.dp,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
+            // Increased this height to bring the stats/buttons down further
+            Spacer(modifier = Modifier.height(60.dp))
 
-                SummaryRow("💰 Earned", "$$dailyEarnings")
-                SummaryRow("📊 Quota", "$$dailyQuota")
-                SummaryRow("✅ Status", "PASSED!", MoneyGreen)
-
-                HorizontalDivider(
-                    color = Gold.copy(alpha = 0.3f),
-                    thickness = 1.dp,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
-
-                SummaryRow("🏦 Total Money", "$$totalMoney")
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Button(
-                    onClick = onContinue,
-                    modifier = Modifier
-                        .fillMaxWidth(0.7f)
-                        .height(52.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = WarmOrange,
-                        contentColor = DarkBrown
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
+            // Main Data Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Start,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // LEFT SIDE: Stats
+                Column(
+                    modifier = Modifier.width(160.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    Text(
-                        text = "CONTINUE ▶",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 2.sp
+                    TransparentStatRow("Earned", "$$dailyEarnings", Color(0xFF4E2020))
+                    TransparentStatRow("Quota", "$$dailyQuota", Color(0xFF4E2020))
+
+                    HorizontalDivider(
+                        modifier = Modifier.width(100.dp),
+                        thickness = 1.dp,
+                        color = Color(0xFF4E2020)
                     )
+
+                    TransparentStatRow("Total Savings", "$$totalMoney", Gold)
+                }
+
+                Spacer(modifier = Modifier.width(38.dp)) // Added space between stats and buttons
+
+                // RIGHT SIDE: Buttons
+                Column(
+                    modifier = Modifier.width(130.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Button(
+                        onClick = onContinue,
+                        modifier = Modifier.fillMaxWidth().height(44.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = MoneyGreen),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("NEXT ▶", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
+
+                    Button(
+                        onClick = onMainMenu,
+                        modifier = Modifier.fillMaxWidth().height(44.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = OvergrilledRed),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("QUIT", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
                 }
             }
         }
@@ -108,26 +116,24 @@ fun SummaryScreen(
 }
 
 @Composable
-private fun SummaryRow(
+private fun TransparentStatRow(
     label: String,
     value: String,
-    valueColor: androidx.compose.ui.graphics.Color = CreamWhite
+    valueColor: Color
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
+    Column {
         Text(
-            text = label,
-            color = CreamWhite.copy(alpha = 0.8f),
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Medium
+            text = label.uppercase(),
+            fontSize = 11.sp, // Smaller label
+            fontWeight = FontWeight.Bold,
+            color = Color.Black.copy(alpha = 0.4f),
+            letterSpacing = 0.5.sp
         )
         Text(
             text = value,
-            color = valueColor,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold
+            fontSize = 24.sp, // Scaled down from 32
+            fontWeight = FontWeight.Black,
+            color = valueColor
         )
     }
 }

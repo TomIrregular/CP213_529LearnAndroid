@@ -1,20 +1,19 @@
 package com.tomweasley.overgrilled.screens
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.tomweasley.overgrilled.R
 import com.tomweasley.overgrilled.ui.theme.*
 
 @Composable
@@ -23,97 +22,96 @@ fun GameOverScreen(
     dailyEarnings: Int,
     dailyQuota: Int,
     totalMoney: Int,
-    highScore: Int,
+    // highScore: Int, // Removed as requested
     onBackToMenu: () -> Unit
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                Brush.radialGradient(
-                    colors = listOf(
-                        Color(0xFF3E1A1A),
-                        DarkBrown
-                    )
-                )
-            ),
-        contentAlignment = Alignment.Center
-    ) {
-        Box(
+    Box(modifier = Modifier.fillMaxSize()) {
+        // --- BACKGROUND ---
+        Image(
+            painter = painterResource(id = R.drawable.summary_screen),
+            contentDescription = null,
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.fillMaxSize()
+        )
+
+        // --- CONTENT OVERLAY ---
+        Column(
             modifier = Modifier
-                .fillMaxWidth(0.5f)
-                .clip(RoundedCornerShape(20.dp))
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFF4E2020),
-                            MediumBrown
-                        )
-                    )
-                )
-                .border(3.dp, OvergrilledRed.copy(alpha = 0.6f), RoundedCornerShape(20.dp))
-                .padding(32.dp)
+                .fillMaxSize()
+                .padding(horizontal = 64.dp)
+                .padding(top = 80.dp, bottom = 32.dp)
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
+            // Header
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Spacer(modifier = Modifier.weight(1f))
                 Text(
-                    text = "💀 GAME OVER",
-                    fontSize = 32.sp,
+                    text = "Day $currentDay FAILED!",
+                    fontSize = 24.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = OvergrilledRed,
-                    letterSpacing = 3.sp,
-                    textAlign = TextAlign.Center
+                    color = Color(0xFF8B0000), // Dark ink red
+                    letterSpacing = 1.sp,
+                    modifier = Modifier.padding(end = 40.dp)
                 )
+            }
 
-                Text(
-                    text = "You couldn't meet the quota!",
-                    color = CreamWhite.copy(alpha = 0.7f),
-                    fontSize = 14.sp
-                )
+            Spacer(modifier = Modifier.height(50.dp))
 
-                HorizontalDivider(
-                    color = OvergrilledRed.copy(alpha = 0.3f),
-                    thickness = 1.dp,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
-
-                GameOverRow("📅 Day", "$currentDay")
-                GameOverRow("💰 Day Earnings", "$$dailyEarnings")
-                GameOverRow("📊 Day Quota", "$$dailyQuota")
-                GameOverRow("❌ Short by", "$${(dailyQuota - dailyEarnings).coerceAtLeast(0)}", OvergrilledRed)
-
-                HorizontalDivider(
-                    color = OvergrilledRed.copy(alpha = 0.3f),
-                    thickness = 1.dp,
-                    modifier = Modifier.padding(vertical = 8.dp)
-                )
-
-                GameOverRow("🏦 Total Money", "$$totalMoney")
-                GameOverRow("🏆 High Score", "$$highScore", Gold)
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Button(
-                    onClick = onBackToMenu,
-                    modifier = Modifier
-                        .fillMaxWidth(0.7f)
-                        .height(52.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = OvergrilledRed.copy(alpha = 0.8f),
-                        contentColor = CreamWhite
-                    ),
-                    shape = RoundedCornerShape(12.dp),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 8.dp)
+            // Main Data Row
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Start,
+                verticalAlignment = Alignment.Top
+            ) {
+                // LEFT SIDE: Stats List
+                Column(
+                    modifier = Modifier.width(220.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    Text(
-                        text = "BACK TO MENU",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 1.sp
+                    TransparentStatRow("Day Earnings", "$$dailyEarnings", Color(0xFF4E2020))
+
+                    // Row for Quota and Short By
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically // Standard alignment for standardized size
+                    ) {
+                        // Standardized font size for correct inline look
+                        TransparentStatRow("Day Quota", "$$dailyQuota", Color(0xFF4E2020))
+
+                        Spacer(modifier = Modifier.width(24.dp)) // A bit more spacing looks better when sizes match
+
+                        val shortBy = (dailyQuota - dailyEarnings).coerceAtLeast(0)
+
+                        // "Short by" is now its own distinct TransparentStatRow,
+                        // ensuring labels and values match sizes perfectly.
+                        TransparentStatRow("SHORT BY", "-$$shortBy", OvergrilledRed)
+                    }
+
+                    HorizontalDivider(
+                        modifier = Modifier.width(120.dp).padding(vertical = 4.dp),
+                        thickness = 1.dp,
+                        color = Color(0xFF4E2020).copy(alpha = 0.2f)
                     )
+
+                    TransparentStatRow("Total Money", "$$totalMoney", Gold)
+                    // High Score removed
+                }
+
+                Spacer(modifier = Modifier.width(0.dp))
+
+                // RIGHT SIDE: Action Button
+                Column(
+                    modifier = Modifier.width(130.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Spacer(modifier = Modifier.height(45.dp))
+                    Button(
+                        onClick = onBackToMenu,
+                        modifier = Modifier.fillMaxWidth().height(44.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = OvergrilledRed),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Text("QUIT", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    }
                 }
             }
         }
@@ -121,26 +119,24 @@ fun GameOverScreen(
 }
 
 @Composable
-private fun GameOverRow(
+private fun TransparentStatRow(
     label: String,
     value: String,
-    valueColor: androidx.compose.ui.graphics.Color = CreamWhite
+    valueColor: Color
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
-    ) {
+    Column {
         Text(
-            text = label,
-            color = CreamWhite.copy(alpha = 0.8f),
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Medium
+            text = label.uppercase(),
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold,
+            color = Color.Black.copy(alpha = 0.4f),
+            letterSpacing = 0.5.sp
         )
         Text(
             text = value,
-            color = valueColor,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold
+            fontSize = 20.sp,
+            fontWeight = FontWeight.Black,
+            color = valueColor
         )
     }
 }
