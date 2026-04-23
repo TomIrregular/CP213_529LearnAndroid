@@ -50,14 +50,9 @@ fun GameScreen(
     val timerColor = if (state.timeRemainingMs < 30_000L) OvergrilledRed else CreamWhite
 
     Box(modifier = Modifier.fillMaxSize()) {
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(R.drawable.main_menu)
-                .decoderFactory(if (Build.VERSION.SDK_INT >= 28) ImageDecoderDecoder.Factory() else GifDecoder.Factory())
-                .crossfade(true).build(),
-            contentDescription = "Background",
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop
+        GifImage(
+            resourceId = R.drawable.main_menu,
+            modifier = Modifier.fillMaxSize()
         )
 
         Box(modifier = Modifier.fillMaxSize().background(DarkBrown.copy(alpha = 0.6f)))
@@ -85,6 +80,15 @@ fun GameScreen(
 
 // ── DRAWABLE HELPERS ──────────────────────────────────────────────────
 
+private fun getCustomerGif(name: String?): Int {
+    return when (name) {
+        "Science" -> R.drawable.customer_sc
+        "Humanity" -> R.drawable.customer_hm
+        "Fofa" -> R.drawable.customer_fofa
+        else -> R.drawable.customer_sc // Default fallback
+    }
+}
+
 private fun getMeatSelectDrawable(meat: MeatType): Int = when (meat) {
     MeatType.BEEF    -> R.drawable.select_beef
     MeatType.CHICKEN -> R.drawable.select_chicken
@@ -98,10 +102,6 @@ private fun getSideSelectDrawable(side: SideCondiment): Int = when (side) {
     else                 -> 0
 }
 
-/**
- * Merged Meat-on-Grill logic to remove double logic.
- * Handles both idle and cooking states.
- */
 private fun getGrillMeatDrawable(meat: MeatType, isCooking: Boolean): Int = when (meat) {
     MeatType.BEEF    -> if (isCooking) R.drawable.grill_beef1    else R.drawable.grill_beef
     MeatType.CHICKEN -> if (isCooking) R.drawable.grill_chicken1 else R.drawable.grill_chicken
@@ -109,10 +109,6 @@ private fun getGrillMeatDrawable(meat: MeatType, isCooking: Boolean): Int = when
     MeatType.FISH    -> if (isCooking) R.drawable.grill_fish1    else R.drawable.grill_fish
 }
 
-/**
- * Returns the correct dish image drawable for the given combination of
- * meat, grill level, and side condiment (none / sauce / potato / both).
- */
 private fun getDishDrawable(meat: MeatType, level: GrillLevel, side: SideCondiment): Int {
     return when (meat) {
         MeatType.BEEF -> when (side) {
@@ -211,12 +207,27 @@ private fun getDishDrawable(meat: MeatType, level: GrillLevel, side: SideCondime
 @Composable
 private fun LeftColumn(state: GameState, modifier: Modifier = Modifier) {
     Column(modifier = modifier.fillMaxHeight()) {
-        Box(modifier = Modifier.fillMaxWidth().weight(1f).clip(RoundedCornerShape(12.dp)).background(LightBrown).border(2.dp, WarmOrange.copy(alpha = 0.4f), RoundedCornerShape(12.dp)), contentAlignment = Alignment.Center) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text("👤", fontSize = 48.sp)
-                Text(state.currentCharacter?.name ?: "...", color = CreamWhite, fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                Text("CHARACTER", color = CreamWhite.copy(alpha = 0.5f), fontSize = 11.sp)
-            }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .clip(RoundedCornerShape(12.dp))
+                .background(LightBrown)
+                .border(2.dp, WarmOrange.copy(alpha = 0.4f), RoundedCornerShape(12.dp)),
+            contentAlignment = Alignment.Center
+        ) {
+            val customerGif = getCustomerGif(state.currentCharacter?.name)
+
+            AsyncImage(
+                model = ImageRequest.Builder(LocalContext.current)
+                    .data(customerGif)
+                    .decoderFactory(if (Build.VERSION.SDK_INT >= 28) ImageDecoderDecoder.Factory() else GifDecoder.Factory())
+                    .crossfade(true)
+                    .build(),
+                contentDescription = state.currentCharacter?.name ?: "Customer",
+                modifier = Modifier.fillMaxSize().padding(8.dp),
+                contentScale = ContentScale.Fit
+            )
         }
         Spacer(modifier = Modifier.height(8.dp))
         Box(modifier = Modifier.fillMaxWidth().heightIn(min = 80.dp).clip(RoundedCornerShape(12.dp)).background(Brush.verticalGradient(listOf(Color(0xFF4E342E), Color(0xFF3E2723)))).border(2.dp, Gold.copy(alpha = 0.5f), RoundedCornerShape(12.dp)).padding(12.dp)) {
@@ -273,7 +284,10 @@ private fun RightColumn(state: GameState, onStartGrill: () -> Unit, onStopGrill:
                 val canGrill = state.selectedMeat != null && !state.meatCooked
                 Box(modifier = Modifier.fillMaxWidth().weight(1f).clip(RoundedCornerShape(8.dp)).then(if (canGrill) Modifier.pointerInput(Unit) { detectTapGestures(onPress = { onStartGrill(); tryAwaitRelease(); onStopGrill() }) } else Modifier), contentAlignment = Alignment.Center) {
                     val grillDrawable = if (state.selectedMeat == null) R.drawable.grill else getGrillMeatDrawable(state.selectedMeat, state.isGrilling)
-                    Image(painter = painterResource(id = grillDrawable), contentDescription = "Grill", modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
+                    GifImage(
+                        resourceId = grillDrawable,
+                        modifier = Modifier.fillMaxSize()
+                    )
 
                     if (state.selectedMeat != null && state.grilledLevel != null && !state.isGrilling) {
                         Text(state.grilledLevel.displayName, color = when(state.grilledLevel){ GrillLevel.RARE -> RareGreen; GrillLevel.WELL_DONE -> WellDoneAmber; else -> OvergrilledRed }, modifier = Modifier.align(Alignment.BottomCenter).padding(4.dp).background(DarkBrown.copy(alpha = 0.7f), RoundedCornerShape(6.dp)).padding(horizontal = 8.dp), fontWeight = FontWeight.Bold, fontSize = 13.sp)
@@ -293,11 +307,9 @@ private fun RightColumn(state: GameState, onStartGrill: () -> Unit, onStopGrill:
             ) {
                 if (state.meatCooked && state.selectedMeat != null && state.grilledLevel != null) {
                     val side = effectiveSide(state.selectedSauce, state.selectedPotato)
-                    Image(
-                        painter = painterResource(id = getDishDrawable(state.selectedMeat, state.grilledLevel, side)),
-                        contentDescription = "Dish result",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = ContentScale.Fit
+                    GifImage(
+                        resourceId = getDishDrawable(state.selectedMeat, state.grilledLevel, side),
+                        modifier = Modifier.fillMaxSize()
                     )
                 } else {
                     Text("DISH\nRESULT", color = CreamWhite.copy(alpha = 0.3f), textAlign = TextAlign.Center, fontSize = 13.sp)
@@ -308,7 +320,7 @@ private fun RightColumn(state: GameState, onStartGrill: () -> Unit, onStopGrill:
                     modifier = Modifier.width(72.dp).weight(1f),
                     colors = ButtonDefaults.buttonColors(containerColor = MoneyGreen, contentColor = DarkBrown),
                     shape = RoundedCornerShape(10.dp))
-                    { Text("✓", fontSize = 12.sp)}
+                { Text("✓", fontSize = 12.sp)}
                 Button(onClick = onTrash,
                     modifier = Modifier.width(72.dp).weight(1f),
                     colors = ButtonDefaults.buttonColors(containerColor = TrashGray, contentColor = CreamWhite),

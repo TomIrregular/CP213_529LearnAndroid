@@ -22,12 +22,26 @@ object OrderGenerator {
         )
     )
 
-    private val characters = listOf(sc, hm)
+    private val fofa = Character(
+        name = "Fofa",
+        orderPool = listOf(
+            Order(MeatType.BEEF, GrillLevel.RARE, SideCondiment.NONE),
+            Order(MeatType.CHICKEN, GrillLevel.RARE, SideCondiment.NONE),
+            Order(MeatType.PORK, GrillLevel.RARE, SideCondiment.NONE),
+            Order(MeatType.FISH, GrillLevel.RARE, SideCondiment.NONE)
+        )
+    )
 
-    /** Returns a random (Character, Order) pair. */
-    fun generateOrder(): Pair<Character, Order> {
-        val character = characters[Random.nextInt(characters.size)]
-        val order = character.orderPool[Random.nextInt(character.orderPool.size)]
+    /** Returns a random (Character, Order) pair based on the current day. */
+    fun generateOrder(currentDay: Int): Pair<Character, Order> {
+        val availableCharacters = when {
+            currentDay == 1 -> listOf(sc)
+            currentDay == 2 -> listOf(sc, hm)
+            else -> listOf(sc, hm, fofa)
+        }
+
+        val character = availableCharacters.random()
+        val order = character.orderPool.random()
         return character to order
     }
 
@@ -56,6 +70,12 @@ object OrderGenerator {
                 "Hey! I'll have my usual please. You know, $grillText ${order.meat.displayName.lowercase()} $sideText.",
                 "Sooo many choices to choose from! ${order.meat.displayName} looks good. I'd like that $grillText $sideText!",
                 "Hey-o! Good business today? $grillText ${order.meat.displayName.lowercase()}, please. Oh, and $sideText. Can't forget that!"
+            ).random()
+
+            "Fofa" -> listOf(
+                "H-hi! Uh, a Well-done ${order.meat.displayName.lowercase()}, please. No, wait! A $grillText ${order.meat.displayName.lowercase()}. Sorry!",
+                "Uh... C-could I have a ${order.meat.displayName.lowercase()}. $grillText. Nothing else. Thank you!",
+                "Hi! I'll have uh... a rare chicken- No, wait! A $grillText ${order.meat.displayName.lowercase()}... Sorry!"
             ).random()
 
             else -> "I want a $grillText ${order.meat.displayName.lowercase()} steak $sideText."

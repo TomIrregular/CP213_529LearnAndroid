@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.tomweasley.overgrilled.R
+import com.tomweasley.overgrilled.data.GifImage
 import com.tomweasley.overgrilled.ui.theme.*
 
 @Composable
@@ -27,10 +28,8 @@ fun GameOverScreen(
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
         // --- BACKGROUND ---
-        Image(
-            painter = painterResource(id = R.drawable.summary_screen),
-            contentDescription = null,
-            contentScale = ContentScale.Fit,
+        GifImage(
+            resourceId = R.drawable.summary_screen,
             modifier = Modifier.fillMaxSize()
         )
 

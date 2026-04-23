@@ -11,6 +11,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.tomweasley.overgrilled.viewmodel.SoundManager
+import kotlinx.coroutines.flow.asStateFlow
 
 class GameViewModel(application: Application) : AndroidViewModel(application) {
 
@@ -26,6 +28,34 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     init {
         loadHighScore()
+    }
+
+    // ── Sound manager ──────────────────────────────────────────────────────
+    val soundManager = SoundManager(application)
+
+    private val _isMusicEnabled = MutableStateFlow(true)
+    val isMusicEnabled = _isMusicEnabled.asStateFlow()
+
+    private val _isSfxEnabled = MutableStateFlow(true)
+    val isSfxEnabled = _isSfxEnabled.asStateFlow()
+
+    fun toggleMusic() {
+        val newState = !_isMusicEnabled.value
+        _isMusicEnabled.value = newState
+        soundManager.isMusicEnabled = newState
+        soundManager.playInteract()
+    }
+
+    fun toggleSfx() {
+        val newState = !_isSfxEnabled.value
+        _isSfxEnabled.value = newState
+        soundManager.isSfxEnabled = newState
+        if (newState) soundManager.playInteract()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        soundManager.release()
     }
 
     // ── High score ──────────────────────────────────────────────────────
@@ -127,7 +157,8 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun spawnNewCustomer() {
         dialogueJob?.cancel()
-        val (character, order) = OrderGenerator.generateOrder()
+        val (character, order) = OrderGenerator.generateOrder(_state.value.currentDay)
+
         val dialogue = OrderGenerator.generateDialogue(character, order)
         val words = dialogue.split(" ")
 
@@ -176,7 +207,7 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
         grillJob?.cancel()
         grillJob = viewModelScope.launch {
             while (_state.value.isGrilling && _state.value.grillProgress < 1f) {
-                delay(16L) // ~60 fps
+                delay(32L)
                 _state.update {
                     it.copy(grillProgress = (it.grillProgress + 0.007f).coerceAtMost(1f))
                 }

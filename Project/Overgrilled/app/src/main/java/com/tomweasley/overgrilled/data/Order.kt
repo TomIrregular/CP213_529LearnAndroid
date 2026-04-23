@@ -51,7 +51,7 @@ data class GameState(
     val dailyQuota: Int = 60,
     val dailyEarnings: Int = 0,
     val totalMoney: Int = 0,
-    val timeRemainingMs: Long = 60_000L,
+    val timeRemainingMs: Long = 180_000L,
 
     // Current customer
     val currentCharacter: Character? = null,

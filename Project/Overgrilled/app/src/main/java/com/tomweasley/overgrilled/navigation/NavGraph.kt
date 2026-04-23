@@ -16,6 +16,12 @@ fun NavGraph(gameViewModel: GameViewModel = viewModel()) {
     val navController = rememberNavController()
     val state by gameViewModel.state.collectAsState()
 
+    // FIX 1: Access the new music-specific state
+    val isMusicEnabled by gameViewModel.isMusicEnabled.collectAsState()
+
+    // Quick helper to play raw on ANY button interaction routed through here
+    val playInteract = { gameViewModel.soundManager.playInteract() }
+
     NavHost(
         navController = navController,
         startDestination = "main_menu",
@@ -23,20 +29,28 @@ fun NavGraph(gameViewModel: GameViewModel = viewModel()) {
         exitTransition = { fadeOut(animationSpec = tween(600)) }
     ) {
         composable("main_menu") {
+            // Trigger Main Menu Music
+            LaunchedEffect(Unit) {
+                gameViewModel.soundManager.playMainMenuBGM()
+            }
+
             MainMenuScreen(
                 highScore = state.highScore,
+                // FIX 2: Match the new parameter names in MainMenuScreen.kt
+                isMusicEnabled = isMusicEnabled,
                 onStartClick = {
-                    navController.navigate("how_to_play") {
-                        launchSingleTop = true
-                    }
+                    playInteract()
+                    navController.navigate("how_to_play") { launchSingleTop = true }
                 },
-                onOptionClick = { /* TODO: options */ }
+                // FIX 3: Point to the new music toggle function in GameViewModel.kt
+                onToggleMusic = { gameViewModel.toggleMusic() }
             )
         }
 
         composable("how_to_play") {
             HowToPlayScreen(
                 onNextClick = {
+                    playInteract()
                     gameViewModel.startNewGame()
                     navController.navigate("game") {
                         popUpTo("main_menu") { inclusive = false }
@@ -49,42 +63,49 @@ fun NavGraph(gameViewModel: GameViewModel = viewModel()) {
         composable("game") {
             when (state.gamePhase) {
                 GamePhase.PLAYING -> {
+                    LaunchedEffect(state.currentDay) {
+                        gameViewModel.soundManager.playGameTrackBGM()
+                    }
+
                     GameScreen(
                         state = state,
-                        onSelectMeat = gameViewModel::selectMeat,
-                        onStartGrill = gameViewModel::startGrilling,
-                        onStopGrill = gameViewModel::stopGrilling,
-                        onSelectSide = gameViewModel::selectSide,
-                        onSend = gameViewModel::sendDish,
-                        onTrash = gameViewModel::trashDish
+                        onSelectMeat = { playInteract(); gameViewModel.selectMeat(it) },
+                        onStartGrill = { playInteract(); gameViewModel.startGrilling() },
+                        onStopGrill = { gameViewModel.stopGrilling() },
+                        onSelectSide = { playInteract(); gameViewModel.selectSide(it) },
+                        onSend = { playInteract(); gameViewModel.sendDish() },
+                        onTrash = { playInteract(); gameViewModel.trashDish() }
                     )
                 }
 
                 GamePhase.DAY_SUMMARY -> {
+                    LaunchedEffect(Unit) { gameViewModel.soundManager.playResultBGM() }
                     SummaryScreen(
                         currentDay = state.currentDay,
                         dailyEarnings = state.dailyEarnings,
                         dailyQuota = state.dailyQuota,
                         totalMoney = state.totalMoney,
-                        onContinue = gameViewModel::continueToNextDay,
+                        onContinue = {
+                            playInteract()
+                            gameViewModel.continueToNextDay()
+                        },
                         onMainMenu = {
-                            navController.navigate("main_menu") {
-                                popUpTo(0) { inclusive = true }
-                            }
+                            playInteract()
+                            navController.navigate("main_menu") { popUpTo(0) { inclusive = true } }
                         }
                     )
                 }
 
                 GamePhase.GAME_OVER -> {
+                    LaunchedEffect(Unit) { gameViewModel.soundManager.playResultBGM() }
                     GameOverScreen(
                         currentDay = state.currentDay,
                         dailyEarnings = state.dailyEarnings,
                         dailyQuota = state.dailyQuota,
                         totalMoney = state.totalMoney,
                         onBackToMenu = {
-                            navController.navigate("main_menu") {
-                                popUpTo(0) { inclusive = true }
-                            }
+                            playInteract()
+                            navController.navigate("main_menu") { popUpTo(0) { inclusive = true } }
                         }
                     )
                 }
