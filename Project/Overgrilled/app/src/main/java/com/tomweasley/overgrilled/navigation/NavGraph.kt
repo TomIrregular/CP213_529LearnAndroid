@@ -16,10 +16,8 @@ fun NavGraph(gameViewModel: GameViewModel = viewModel()) {
     val navController = rememberNavController()
     val state by gameViewModel.state.collectAsState()
 
-    // FIX 1: Access the new music-specific state
     val isMusicEnabled by gameViewModel.isMusicEnabled.collectAsState()
 
-    // Quick helper to play raw on ANY button interaction routed through here
     val playInteract = { gameViewModel.soundManager.playInteract() }
 
     NavHost(
@@ -29,20 +27,17 @@ fun NavGraph(gameViewModel: GameViewModel = viewModel()) {
         exitTransition = { fadeOut(animationSpec = tween(600)) }
     ) {
         composable("main_menu") {
-            // Trigger Main Menu Music
             LaunchedEffect(Unit) {
                 gameViewModel.soundManager.playMainMenuBGM()
             }
 
             MainMenuScreen(
                 highScore = state.highScore,
-                // FIX 2: Match the new parameter names in MainMenuScreen.kt
                 isMusicEnabled = isMusicEnabled,
                 onStartClick = {
                     playInteract()
                     navController.navigate("how_to_play") { launchSingleTop = true }
                 },
-                // FIX 3: Point to the new music toggle function in GameViewModel.kt
                 onToggleMusic = { gameViewModel.toggleMusic() }
             )
         }
