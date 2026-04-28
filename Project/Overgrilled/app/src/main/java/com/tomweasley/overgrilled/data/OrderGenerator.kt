@@ -3,6 +3,9 @@ package com.tomweasley.overgrilled.data
 import kotlin.random.Random
 
 object OrderGenerator {
+    private val scienceNames = listOf("Fiz Seed", "K. Misty", "Bile O.")
+    private val humanityNames = listOf("Cherry", "Berry")
+    private val fofaNames = listOf("Monet", "Vanny")
 
     private val sc = Character(
         name = "Science",

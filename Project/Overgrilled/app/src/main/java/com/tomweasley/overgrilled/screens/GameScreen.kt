@@ -216,24 +216,38 @@ private fun LeftColumn(state: GameState, modifier: Modifier = Modifier) {
                 .border(2.dp, WarmOrange.copy(alpha = 0.4f), RoundedCornerShape(12.dp)),
             contentAlignment = Alignment.Center
         ) {
-            val customerGif = getCustomerGif(state.currentCharacter?.name)
+            state.currentCharacter?.let { character ->
+                val customerGif = getCustomerGif(character.name)
 
-            AsyncImage(
-                model = ImageRequest.Builder(LocalContext.current)
-                    .data(customerGif)
-                    .decoderFactory(if (Build.VERSION.SDK_INT >= 28) ImageDecoderDecoder.Factory() else GifDecoder.Factory())
-                    .crossfade(true)
-                    .build(),
-                contentDescription = state.currentCharacter?.name ?: "Customer",
-                modifier = Modifier.fillMaxSize().padding(8.dp),
-                contentScale = ContentScale.Fit
-            )
+                AsyncImage(
+                    model = ImageRequest.Builder(LocalContext.current)
+                        .data(customerGif)
+                        .decoderFactory(if (Build.VERSION.SDK_INT >= 28) ImageDecoderDecoder.Factory() else GifDecoder.Factory())
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = character.name,
+                    modifier = Modifier.fillMaxSize().padding(8.dp),
+                    contentScale = ContentScale.Fit
+                )
+            }
         }
         Spacer(modifier = Modifier.height(8.dp))
         Box(modifier = Modifier.fillMaxWidth().heightIn(min = 80.dp).clip(RoundedCornerShape(12.dp)).background(Brush.verticalGradient(listOf(Color(0xFF4E342E), Color(0xFF3E2723)))).border(2.dp, Gold.copy(alpha = 0.5f), RoundedCornerShape(12.dp)).padding(12.dp)) {
             Column {
-                Text("💬 ${state.currentCharacter?.name ?: ""}", color = Gold, fontWeight = FontWeight.Bold, fontSize = 12.sp)
-                Text(state.dialogueWords.joinToString(" "), color = CreamWhite, fontSize = 14.sp, fontStyle = FontStyle.Italic)
+                if (state.currentCharacter != null) {
+                    Text(
+                        "💬 ${state.currentCharacter.name}",
+                        color = Gold,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp
+                    )
+                }
+                Text(
+                    state.dialogueWords.joinToString(" "),
+                    color = CreamWhite,
+                    fontSize = 14.sp,
+                    fontStyle = FontStyle.Italic
+                )
             }
         }
     }

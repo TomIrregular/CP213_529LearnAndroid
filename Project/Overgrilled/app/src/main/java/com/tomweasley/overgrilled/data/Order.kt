@@ -36,6 +36,7 @@ data class Order(
 
 data class Character(
     val name: String,
+    var currentName: String = "",
     val orderPool: List<Order>
 )
 

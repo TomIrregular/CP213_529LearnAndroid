@@ -157,33 +157,43 @@ class GameViewModel(application: Application) : AndroidViewModel(application) {
 
     private fun spawnNewCustomer() {
         dialogueJob?.cancel()
-        val (character, order) = OrderGenerator.generateOrder(_state.value.currentDay)
 
-        val dialogue = OrderGenerator.generateDialogue(character, order)
-        val words = dialogue.split(" ")
+        viewModelScope.launch {
+            _state.update {
+                it.copy(
+                    currentCharacter = null,
+                    dialogueWords = emptyList()
+                )
+            }
+            delay(1000L)
 
-        _state.update {
-            it.copy(
-                currentCharacter = character,
-                currentOrder = order,
-                dialogueWords = emptyList(),
-                totalDialogueWords = words,
-                selectedMeat = null,
-                grillProgress = 0f,
-                isGrilling = false,
-                grilledLevel = null,
-                meatCooked = false,
-                selectedSauce = false,
-                selectedPotato = false,
-                lastEarned = 0
-            )
-        }
+            val (character, order) = OrderGenerator.generateOrder(_state.value.currentDay)
+            val dialogue = OrderGenerator.generateDialogue(character, order)
+            val words = dialogue.split(" ")
 
-        dialogueJob = viewModelScope.launch {
-            for (i in words.indices) {
-                delay(200L)
-                _state.update {
-                    it.copy(dialogueWords = words.subList(0, i + 1))
+            _state.update {
+                it.copy(
+                    currentCharacter = character,
+                    currentOrder = order,
+                    dialogueWords = emptyList(),
+                    totalDialogueWords = words,
+                    selectedMeat = null,
+                    grillProgress = 0f,
+                    isGrilling = false,
+                    grilledLevel = null,
+                    meatCooked = false,
+                    selectedSauce = false,
+                    selectedPotato = false,
+                    lastEarned = 0
+                )
+            }
+
+            dialogueJob = viewModelScope.launch {
+                for (i in words.indices) {
+                    delay(200L)
+                    _state.update {
+                        it.copy(dialogueWords = words.subList(0, i + 1))
+                    }
                 }
             }
         }
