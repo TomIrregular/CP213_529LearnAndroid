@@ -55,7 +55,15 @@ fun NavGraph(gameViewModel: GameViewModel = viewModel()) {
             )
         }
 
-        composable("game") {
+        composable("game",
+        enterTransition = {
+            slideInVertically(
+                initialOffsetY = { fullHeight -> fullHeight },
+                animationSpec = tween(700)
+            ) + fadeIn(animationSpec = tween(700))
+        },
+        exitTransition = {fadeOut(animationSpec = tween(300))
+        }) {
             when (state.gamePhase) {
                 GamePhase.PLAYING -> {
                     LaunchedEffect(state.currentDay) {
